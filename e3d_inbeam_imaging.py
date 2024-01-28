@@ -1,30 +1,46 @@
 #!/usr/bin/env python
+
 """
-Created by: Devin Huyghebaert in June, 2022 for E3D Testing
-Edited by: Devin Huyghebaert, multiple times to January 19, 2024
+Created by: Devin Huyghebaert, Björn Gustavsson, Ilkka Virtanen, Juha Vierinen in January, 2024 for EISCAT 3D Imaging Testing
 
-Some assumptions:   - scattering volume is stationary over sampling period (spectra for each sampling point does not change)
-                    - repeated baselines don't have significant variation in total distance of signal
+Further explanations of the following assumptions can be found in Huyghebaert et al. 2024:
 
-Estimated Errors Implemented by Ilkka Virtanen, January 2024
+Current assumptions:    - scattering volume is stationary over sampling period (spectra for each sampling point does not change)
+                        - plasma parameters are constant in the model input volume
+                        - repeated baselines don't have significant variation in total distance of signal
+                        - ionosphere is parallel to and centered on the main array at Skibotn
+                        - The radar is observing along the geomagnetic field line
+                        - transmit power all originates from the center of the main array
+                        - no self-clutter (also known as self-interference) exists in the model
+                        - no side-lobe interference/addition to the signal exists
+                        - there are no differences in the power received at each radar panel in the main array due to distance
+                         
+---
+Software is based on the following publications:
 
-Software is based on the publications:
-
+---
 For the ISR Spectrum Generation:
 
-***insert github link for ISRSpectrum package***
+https://github.com/jswoboda/ISRSpectrum
 
-Swoboda et al., 2017
+J. Swoboda, “SPACE-TIME SAMPLING STRATEGIES FOR ELECTRONICALLY STEERABLE INCOHERENT SCATTER RADAR,” Boston University, 2016.
 
+J. Swoboda, J. Semeter, M. Zettergren, and P. J. Erickson, “Observability of ionospheric space-time structure with ISR: A simulation study,” Radio Science, vol. 52, no. 2, pp. 1–20, Feb. 2017, doi: 10.1002/2016RS006182.
+
+---
 For the Imaging:
 
-Stamm et al., 2021
+Stamm, J., Vierinen, J., Urco, J. M., Gustavsson, B., and Chau, J. L.: Radar imaging with EISCAT 3D, Ann. Geophys., 39, 119–134, https://doi.org/10.5194/angeo-39-119-2021, 2021.
 
-Huyghebaert et al, 2023
+Huyghebaert et al, 2024 (to be submitted)
 
+---
 For the Error analysis:
 
-Valinosky et al., 1988
+Vallinkoski, M.: Statistics of incoherent scatter multiparameter fits, Journal of Atmospheric and Terrestrial Physics, 50, 839–851, https://doi.org/https://doi.org/10.1016/0021-9169(88)90106-7, 1988.
+
+EISCAT_3D measurement methods handbook
+http://urn.fi/urn:isbn:9789526205854
 
 """
 
@@ -44,8 +60,13 @@ mpl.rcParams['figure.figsize'] = [30.0, 24.0]
 mpl.rcParams.update({'font.size': 32})
 np.set_printoptions(threshold=sys.maxsize)
 
-config.read('e3d_image_config.ini')
+#-----
+#-----
+#Read in data from the input configuration file
+#-----
+#-----
 
+config.read('e3d_image_config.ini')
 #File details
 input_model_file = config.get('file_info','input_model_file')
 input_data_field_ne = config.get('file_info','input_data_field_ne')
@@ -77,6 +98,12 @@ radar_freq = float(config.get('exp_param','radar_freq'))
 #Image Processing Parameters
 goal_SNR = float(config.get('image_param','SNR'))
 regularization = float(config.get('image_param','regularization'))
+
+#-----
+#-----
+#Data read finished
+#-----
+#-----
 
 output_folder_name=output_data_location
 
