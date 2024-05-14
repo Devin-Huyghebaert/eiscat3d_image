@@ -3,7 +3,7 @@
 """
 Created by: Devin Huyghebaert, Björn Gustavsson, Ilkka Virtanen, Juha Vierinen in January, 2024 for EISCAT 3D Imaging Testing
 
-Further explanations of the following assumptions can be found in Huyghebaert et al. 2024:
+Further explanations of the following assumptions can be found in Huyghebaert et al. (2024) - reference below
 
 Current assumptions:    - scattering volume is stationary over sampling period (spectra for each sampling point does not change)
                         - plasma parameters are constant in the model input volume
@@ -32,7 +32,7 @@ For the Imaging:
 
 Stamm, J., Vierinen, J., Urco, J. M., Gustavsson, B., and Chau, J. L.: Radar imaging with EISCAT 3D, Ann. Geophys., 39, 119–134, https://doi.org/10.5194/angeo-39-119-2021, 2021.
 
-Huyghebaert et al, 2024 (to be submitted)
+Huyghebaert, D., Gustavsson, B., Vierinen, J., Kvammen, A., Zettergren, M., Swoboda, J., Virtanen, I., Hatch, S., and Laundal, K. M.: Interferometric Imaging with EISCAT_3D for Fine-Scale In-Beam Incoherent Scatter Spectra Measurements, EGUsphere [preprint], https://doi.org/10.5194/egusphere-2024-802, 2024. 
 
 ---
 For the Error analysis:
@@ -144,121 +144,125 @@ TX_beamwidth = TX_beamwidth #degrees FWHM with Gaussian Beam assumption
 #-----
 #-----
 
-#----
-#----
-#SYNTHETIC IONOSPHERE DATA SETUP
-#----
-#----
-
-#distance (or altitude) in m
-distance = altitude
-
-#number of points in x and y directions
-x_res = x_num
-y_res = y_num
-
-spatial_res = spatial_res #in meters
-
-altitude = altitude # in meters
-
-beam_plot = np.asarray([np.sin(np.arange(201)/200*2*np.pi),np.cos(np.arange(201)/200*2*np.pi)])*np.sin(TX_beamwidth*np.pi/180/2.0)*distance
-
-#read in test file for data from GEMINI model
-df = h5py.File(f'{input_model_file}','r')
-
-ne = df[f'{input_data_field_ne}'][...]
-te = df[f'{input_data_field_te}'][...]
-ti = df[f'{input_data_field_ti}'][...]
-vi = df[f'{input_data_field_vi}'][...]
-df.close()
-
-fig,ax=plt.subplots(2,2)
-ne_c=ax[0,0].imshow(ne,aspect='auto',interpolation='none',origin='lower',extent=[-x_res/2*spatial_res,x_res/2*spatial_res,-y_res/2*spatial_res,y_res/2*spatial_res])
-ax[0,0].plot(beam_plot[0,:],beam_plot[1,:],c='k',lw=4,label='Approx. EISCAT_3D FWHM Beam')
-ax[0,0].set_title('Ne')
-ax[0,0].set_xlabel('x (meters)')
-ax[0,0].set_ylabel('y (meters)')
-ax[0,0].legend(loc='upper left')
-te_c=ax[0,1].imshow(te,aspect='auto',interpolation='none',origin='lower',extent=[-x_res/2*spatial_res,x_res/2*spatial_res,-y_res/2*spatial_res,y_res/2*spatial_res])
-ax[0,1].plot(beam_plot[0,:],beam_plot[1,:],c='k',lw=4)
-ax[0,1].set_title('Te')
-ax[0,1].set_xlabel('x (meters)')
-ax[0,1].set_ylabel('y (meters)')
-ti_c=ax[1,0].imshow(ti,aspect='auto',interpolation='none',origin='lower',extent=[-x_res/2*spatial_res,x_res/2*spatial_res,-y_res/2*spatial_res,y_res/2*spatial_res])
-ax[1,0].plot(beam_plot[0,:],beam_plot[1,:],c='k',lw=4)
-ax[1,0].set_title('Ti')
-ax[1,0].set_xlabel('x (meters)')
-ax[1,0].set_ylabel('y (meters)')
-vi_c=ax[1,1].imshow(vi,aspect='auto',interpolation='none',origin='lower',extent=[-x_res/2*spatial_res,x_res/2*spatial_res,-y_res/2*spatial_res,y_res/2*spatial_res])
-ax[1,1].plot(beam_plot[0,:],beam_plot[1,:],c='k',lw=4)
-ax[1,1].set_title('Vi')
-ax[1,1].set_xlabel('x (meters)')
-ax[1,1].set_ylabel('y (meters)')
-plt.colorbar(ne_c,ax=ax[0,0],label=u'Plasma Density ($m^{-3}$)')
-plt.colorbar(te_c,ax=ax[0,1],label='Electron Temperature (K)')
-plt.colorbar(ti_c,ax=ax[1,0],label='Ion Temperature (K)')
-plt.colorbar(vi_c,ax=ax[1,1],label='Ion Velocity (m/s)')
-plt.tight_layout()
-plt.savefig(f'{output_data_location}/ionosphere_initial_plasma_params.png')
-plt.close()
-
-Ne_array = ne
-te_array = te
-ti_array = ti
-vi_array = vi
-
-print(Ne_array.shape)
-
-#----
-#----
-#END Synthetic ionosphere data setup
-#----
-#----
-
-#---------
-#--------- Here are the sampling points for the real EISCAT 3D Array
-#---------
-
-radar_freq = radar_freq
-speed_of_light = spconst.c
-
-#Determine location of EISCAT 3D antennas in 2D plane
-N=109+10 #number of panels (actually 109 - 3 extra per side are added to the E3D design of a 6 size ring (91+18), and should be added to this software at some point) - plus the outrigger locations should be added
-
-panel_distance = 7.07 #meters
-
-ant_x = np.zeros(N,dtype=np.float32)
-ant_y = np.zeros(N,dtype=np.float32)
-
-panel_num=11
-
-#double check these values at some point
-xvalues_outrigger=[-249.46,-543.21,-4.76,-113.11,-327.45,151.17,408.7,707.66,240.5,30.49]
-yvalues_outrigger=[165.38,291.98,173.29,324.07,531.9,103.19,153.01,127.15,362.64,734.76]
-
-for x in range(10):
-    ant_x[x+1]=xvalues_outrigger[x]
-    ant_y[x+1]=yvalues_outrigger[x]
-
-#create a hexagonal array of panels
-for side_num in range(6):
-    for ring_num in range(1,6):
-        for ring_panel in range(ring_num):
-            ant_x[panel_num] = ring_num*panel_distance*np.sin((2*np.pi*((side_num)*60))/360)+(panel_distance*(ring_panel)*np.sin((2*np.pi*((side_num+2)*60))/360))
-            ant_y[panel_num] = ring_num*panel_distance*np.cos((2*np.pi*((side_num)*60))/360)+(panel_distance*(ring_panel)*np.cos((2*np.pi*((side_num+2)*60))/360))
-            panel_num+=1
-
-for side_num in range(6):
-    for ring_panel in range(2,5):
-            ant_x[panel_num] = 6*panel_distance*np.sin((2*np.pi*((side_num)*60))/360)+(panel_distance*(ring_panel)*np.sin((2*np.pi*((side_num+2)*60))/360))
-            ant_y[panel_num] = 6*panel_distance*np.cos((2*np.pi*((side_num)*60))/360)+(panel_distance*(ring_panel)*np.cos((2*np.pi*((side_num+2)*60))/360))
-            panel_num+=1
-
 #------------------
 #------------------
 #------------------
 
 if __name__== '__main__':
+
+    #----
+    #----
+    #SYNTHETIC IONOSPHERE DATA SETUP
+    #----
+    #----
+
+    #distance (or altitude) in m
+    distance = altitude
+
+    #number of points in x and y directions
+    x_res = x_num
+    y_res = y_num
+
+    spatial_res = spatial_res #in meters
+
+    altitude = altitude # in meters
+
+    beam_plot = np.asarray([np.sin(np.arange(201)/200*2*np.pi),np.cos(np.arange(201)/200*2*np.pi)])*np.sin(TX_beamwidth*np.pi/180/2.0)*distance
+
+    #read in test file for data from GEMINI model
+    df = h5py.File(f'{input_model_file}','r')
+
+    ne = df[f'{input_data_field_ne}'][...]
+    te = df[f'{input_data_field_te}'][...]
+    ti = df[f'{input_data_field_ti}'][...]
+    vi = df[f'{input_data_field_vi}'][...]
+    df.close()
+
+    fig,ax=plt.subplots(2,2)
+    ne_c=ax[0,0].imshow(ne,aspect='auto',interpolation='none',origin='lower',extent=[-x_res/2*spatial_res,x_res/2*spatial_res,-y_res/2*spatial_res,y_res/2*spatial_res])
+    ax[0,0].plot(beam_plot[0,:],beam_plot[1,:],c='k',lw=4,label='Approx. EISCAT_3D FWHM Beam')
+    ax[0,0].set_title('Ne')
+    ax[0,0].set_xlabel('x (meters)')
+    ax[0,0].set_ylabel('y (meters)')
+    ax[0,0].legend(loc='upper left')
+    te_c=ax[0,1].imshow(te,aspect='auto',interpolation='none',origin='lower',extent=[-x_res/2*spatial_res,x_res/2*spatial_res,-y_res/2*spatial_res,y_res/2*spatial_res])
+    ax[0,1].plot(beam_plot[0,:],beam_plot[1,:],c='k',lw=4)
+    ax[0,1].set_title('Te')
+    ax[0,1].set_xlabel('x (meters)')
+    ax[0,1].set_ylabel('y (meters)')
+    ti_c=ax[1,0].imshow(ti,aspect='auto',interpolation='none',origin='lower',extent=[-x_res/2*spatial_res,x_res/2*spatial_res,-y_res/2*spatial_res,y_res/2*spatial_res])
+    ax[1,0].plot(beam_plot[0,:],beam_plot[1,:],c='k',lw=4)
+    ax[1,0].set_title('Ti')
+    ax[1,0].set_xlabel('x (meters)')
+    ax[1,0].set_ylabel('y (meters)')
+    vi_c=ax[1,1].imshow(vi,aspect='auto',interpolation='none',origin='lower',extent=[-x_res/2*spatial_res,x_res/2*spatial_res,-y_res/2*spatial_res,y_res/2*spatial_res])
+    ax[1,1].plot(beam_plot[0,:],beam_plot[1,:],c='k',lw=4)
+    ax[1,1].set_title('Vi')
+    ax[1,1].set_xlabel('x (meters)')
+    ax[1,1].set_ylabel('y (meters)')
+    plt.colorbar(ne_c,ax=ax[0,0],label=u'Plasma Density ($m^{-3}$)')
+    plt.colorbar(te_c,ax=ax[0,1],label='Electron Temperature (K)')
+    plt.colorbar(ti_c,ax=ax[1,0],label='Ion Temperature (K)')
+    plt.colorbar(vi_c,ax=ax[1,1],label='Ion Velocity (m/s)')
+    plt.tight_layout()
+    plt.savefig(f'{output_data_location}/ionosphere_initial_plasma_params.png')
+    plt.close()
+
+    Ne_array = ne
+    te_array = te
+    ti_array = ti
+    vi_array = vi
+
+    print(Ne_array.shape)
+
+    #----
+    #----
+    #END Synthetic ionosphere data setup
+    #----
+    #----
+
+    #---------
+    #--------- Here are the sampling points for the real EISCAT 3D Array
+    #---------
+
+    radar_freq = radar_freq
+    speed_of_light = spconst.c
+
+    #Determine location of EISCAT 3D antennas in 2D plane
+    N=109+10 #number of panels (actually 109 - 3 extra per side are added to the E3D design of a 6 size ring (91+18), and should be added to this software at some point) - plus the outrigger locations should be added
+
+    panel_distance = 7.07 #meters
+
+    ant_x = np.zeros(N,dtype=np.float32)
+    ant_y = np.zeros(N,dtype=np.float32)
+
+    panel_num=11
+
+    #double check these values at some point
+    xvalues_outrigger=[-249.46,-543.21,-4.76,-113.11,-327.45,151.17,408.7,707.66,240.5,30.49]
+    yvalues_outrigger=[165.38,291.98,173.29,324.07,531.9,103.19,153.01,127.15,362.64,734.76]
+
+    for x in range(10):
+        ant_x[x+1]=xvalues_outrigger[x]
+        ant_y[x+1]=yvalues_outrigger[x]
+
+    #create a hexagonal array of panels
+    for side_num in range(6):
+        for ring_num in range(1,6):
+            for ring_panel in range(ring_num):
+                ant_x[panel_num] = ring_num*panel_distance*np.sin((2*np.pi*((side_num)*60))/360)+(panel_distance*(ring_panel)*np.sin((2*np.pi*((side_num+2)*60))/360))
+                ant_y[panel_num] = ring_num*panel_distance*np.cos((2*np.pi*((side_num)*60))/360)+(panel_distance*(ring_panel)*np.cos((2*np.pi*((side_num+2)*60))/360))
+                panel_num+=1
+
+    for side_num in range(6):
+        for ring_panel in range(2,5):
+                ant_x[panel_num] = 6*panel_distance*np.sin((2*np.pi*((side_num)*60))/360)+(panel_distance*(ring_panel)*np.sin((2*np.pi*((side_num+2)*60))/360))
+                ant_y[panel_num] = 6*panel_distance*np.cos((2*np.pi*((side_num)*60))/360)+(panel_distance*(ring_panel)*np.cos((2*np.pi*((side_num+2)*60))/360))
+                panel_num+=1
+  
+    #---------
+    #--------- End of sampling points for the real EISCAT 3D Array
+    #---------
 
     #create grid of points to evaluate (x,y space), require distance from radar as input
 
@@ -457,9 +461,6 @@ if __name__== '__main__':
     #WE NOW HAVE THE EXPECTED IDEALIZED MEASUREMENTS WITHOUT NOISE
     #----
     #----
-    
-
-    #loop through different SNR
     
     SNR_value = np.power(10.0,goal_SNR/10.0)*119
     
@@ -660,8 +661,11 @@ if __name__== '__main__':
     #total electron volume scattering cross section
     ne_sigma_total = ne_sigma*variable_range_resolution*np.pi*(np.sin(TX_beamwidth*np.pi/180/2.0)*altitude)**2
     
+    TX_efficiency = 0.5
+    TX_gain = 16/(np.sin(TX_beamwidth*np.pi/180)*np.sin(TX_beamwidth*np.pi/180))*TX_efficiency
+    
     #calculate the radar power budget
-    radar_power_total = TX_power*np.power(10,43/10)*np.power(10,23/10)*((speed_of_light/radar_freq)**2)*ne_sigma_total / (((4*np.pi)**3)*(altitude**4))
+    radar_power_total = TX_power*TX_gain*np.power(10,23/10)*((speed_of_light/radar_freq)**2)*ne_sigma_total / (((4*np.pi)**3)*(altitude**4))
     
     #calculate the signal to noise ratio
     calculated_snr = radar_power_total/RX_noise_power
