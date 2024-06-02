@@ -320,7 +320,13 @@ if __name__== '__main__':
         Ci = np.sqrt(spconst.k*ti/(spconst.m_p*mi))
         vi = vi_array[x]
 
-        datablock = np.array([[Ne,ti,vi,1,mi,0],[Ne,te,0,1,1,0]])
+        #estimate for ion-neutral collision frequency
+        if altitude > 149000:
+            nu_i = 0
+        else:
+            nu_i = np.power(((altitude/1000)*-0.056)+9.2,10)
+
+        datablock = np.array([[Ne,ti,vi,1,mi,nu_i],[Ne,te,0,1,1,0]])
         datablockn = datablock.copy()
         (omega,brightness_array[x,:]) = ISS2.getspec(datablock.copy())
     
